@@ -3,11 +3,13 @@ library(ggrepel)
 library(shiny)
 library(shinydashboard)
 library(shinyWidgets)
+library(scales)
 
 # Upload everything to global environment 
 # setwd("C:/Users/efons/Desktop/GSI website")
 data <- read.csv("scc_gsi.csv") %>% 
-  filter(include=="Yes")
+  filter(include=="Yes", 
+         !fy=="FY01-02")
 
 # acre type in rows, not columns
 # maybe there's an easier way, but i dont see how to use it in ggplot otherwise
@@ -44,7 +46,7 @@ vars_permittees <- as.character(sort(unique(data$permittee)))
 colors_projType <- c("lightblue", "salmon", "purple")
 names(colors_projType) <- levels(data$projtype)
 
-colors_acrType <- brewer_pal(pal="Set3")(6)
+colors_acrType <- brewer_pal(pal="Set3")(6)[c(4,2,5,3,1,6)]
 names(colors_acrType) <- levels(data_acr$ac_type)
 
 # The App 
@@ -102,9 +104,12 @@ shinyApp(
       data_sub <- data_sub_1()
       if (nrow(data_sub)>0){
         
-      ggplot(data=data_sub, aes(x=fy,y=tot_acres)) + geom_bar(stat="identity", fill="mediumaquamarine") + 
-        theme(axis.text.x = element_text(angle=90)) + 
-        xlab("Fiscal Year") + ylab("Total Acres")
+      ggplot(data=data_sub, aes(x=fy,y=tot_acres)) + geom_bar(stat="identity", fill="#007bff") + 
+        theme(axis.text.x = element_text(angle=90),
+              plot.title = element_text(face = 'bold', size= "14")) + 
+        xlab("Fiscal Year") + ylab("Total Acres") + 
+          ggtitle("Green Stormwater Infrastructure projects by year") 
+
       }
     })
     
@@ -115,9 +120,10 @@ shinyApp(
         # data grouping makes it easier to print labels on pie chart. Maybe there's another way.
         data_pie_proj <- data_sub %>% 
         group_by(projtype) %>% 
-        summarise(n_projects=n()) 
+        summarise(n_projects=n(),
+                  ac_projtype = sum(tot_acres)) 
       
-      ggplot(data=data_pie_proj, aes(x='', y=n_projects, fill=projtype)) + geom_bar(stat="identity") + 
+      ggplot(data=data_pie_proj, aes(x='', y=ac_projtype, fill=projtype)) + geom_bar(stat="identity") + 
         coord_polar("y", start=0) + # make the bar chart a pie chart 
         theme(
           axis.title.x = element_blank(),
@@ -127,12 +133,15 @@ shinyApp(
           axis.ticks = element_blank(),
           axis.text = element_blank(), 
           legend.position = "right",
-          legend.title = element_text(face="bold")
+          legend.title = element_text(face="bold"),
+          plot.title = element_text(face = 'bold', size= "14")
         ) + 
-        geom_text_repel(aes(label=n_projects), position=position_stack(vjust=0.5), direction="x") + # add labels
-        guides(fill=guide_legend(title="Project Type:")) + 
-        scale_fill_manual(values=colors_projType) # colors remain constnt when inputs change
-      }
+        geom_text_repel(aes(label=signif(ac_projtype,2)), position=position_stack(vjust=0.5), direction="x") + # add labels
+        guides(fill=guide_legend(title="Project Type (in Acres):")) + 
+        scale_fill_manual(values=colors_projType) + # colors remain constnt when inputs change
+        ggtitle("Project Type")
+      
+        }
       
       
     })
@@ -159,13 +168,14 @@ shinyApp(
           axis.ticks = element_blank(),
           axis.text = element_blank(), 
           legend.position = "right",
-          
-          legend.title = element_text(face="bold")
+          legend.title = element_text(face="bold"),
+          plot.title = element_text(face = 'bold', size= "14")
         ) + 
         geom_text_repel(aes(label=signif(sum_ac,2)), position=position_stack(vjust=0.5), direction="x") + 
-        guides(fill=guide_legend(title="Acre Category:")) + 
-        scale_fill_manual(values=colors_acrType)
-      
+        guides(fill=guide_legend(title="Land Use Category (in Acres):")) + 
+        scale_fill_manual(values=colors_acrType) + 
+        ggtitle("Previous land use category") 
+
       }
     })
     
