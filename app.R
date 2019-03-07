@@ -7,7 +7,7 @@ library(scales)
 
 # Upload everything to global environment 
 # setwd("C:/Users/efons/Desktop/GSI website")
-data <- read.csv("scc_gsi.csv") %>% 
+data <- read.csv("http://eoainc.org/scc_gsi.csv") %>% 
   filter(include=="Yes", 
          !fy=="FY01-02")
 
@@ -155,9 +155,9 @@ shinyApp(
         group_by(ac_type) %>% 
         summarise(sum_ac=sum(ac)) %>% 
         filter(sum_ac >0)
-      
-      
-      
+    
+      if (nrow(data_acr_pie)>0){
+     
       ggplot(data=data_acr_pie, aes(x='', y=sum_ac, fill=ac_type)) + geom_bar(stat="identity") + 
         coord_polar("y", start=0) + 
         theme(
@@ -176,7 +176,7 @@ shinyApp(
         scale_fill_manual(values=colors_acrType) + 
         ggtitle("Previous land use category") 
 
-      }
+      }}
     })
     
   }
