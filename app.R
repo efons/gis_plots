@@ -8,10 +8,14 @@ library(shinyWidgets)
 library(scales)
 
 # Upload everything to global environment 
-# setwd("C:/Users/efons/Desktop/GSI website")
+# setwd("C:/Users/efons/gis_plots")
 data <- read.csv("http://eoainc.org/scc_gsi.csv") %>% 
-  filter(include=="Yes", 
-         !fy=="FY01-02")
+  filter(include=="Yes") %>% 
+  mutate(fy = factor(fy, levels=c("FY02-03", "FY03-04", "FY04-05", "FY05-06", "FY06-07", "FY07-08", "FY08-09",
+                                   "FY09-10", "FY10-11", "FY11-12", "FY12-13", "FY13-14", "FY14-15", "FY15-16", "FY16-17", "FY17-18",
+                                  "FY18-19", "FY19-20", "FY20-21", "FY21-22"))) %>% 
+  filter(!is.na(fy))
+
 
 # acre type in rows, not columns
 # maybe there's an easier way, but i dont see how to use it in ggplot otherwise
@@ -35,7 +39,7 @@ data_acr <- rbind(data.frame(project_id = data$project_id,
                              permittee= data$permittee,
                              ac_type = "Other",
                              ac =  data$otheracres),
-                  data.frame(project_id = data$project_id, 
+                  data.frame(project_id = data$project_id,  
                              permittee= data$permittee,
                              ac_type = "Open Space",
                              ac =  data$os_acres)
@@ -72,6 +76,9 @@ shinyApp(
     # Bar plot total acres vs. FY 
     plotOutput("bar_totAcr"),
     
+    br(),
+    
+    
     # The 2 pie charts 
     column(6,plotOutput("pie_projType")),
     column(6,plotOutput("pie_acrType"))
@@ -106,11 +113,15 @@ shinyApp(
       data_sub <- data_sub_1()
       if (nrow(data_sub)>0){
         
-      ggplot(data=data_sub, aes(x=fy,y=tot_acres)) + geom_bar(stat="identity", fill="#007bff") + 
-        theme(axis.text.x = element_text(angle=90),
-              plot.title = element_text(face = 'bold', size= "14")) + 
-        xlab("Fiscal Year") + ylab("Total Acres") + 
-          ggtitle("Green Stormwater Infrastructure projects by year") 
+      ggplot(data=data_sub, aes(x=fy,y=tot_acres)) + 
+          geom_bar(stat="identity", fill="#007bff", width=0.70)+ 
+          scale_x_discrete("Fiscal Year", drop=F) + 
+         ylab("Total Acres") + 
+          ggtitle("Green Stormwater Infrastructure projects by year")  + 
+        theme(text = element_text(size=14),
+              axis.text.x = element_text(angle=90),
+              plot.title = element_text(face = 'bold', size= 16),
+              axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0))) 
 
       }
     })
@@ -127,7 +138,7 @@ shinyApp(
       
       ggplot(data=data_pie_proj, aes(x='', y=ac_projtype, fill=projtype)) + geom_bar(stat="identity") + 
         coord_polar("y", start=0) + # make the bar chart a pie chart 
-        theme(
+        theme(text= element_text(size=14),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
           panel.border = element_blank(),
@@ -136,7 +147,7 @@ shinyApp(
           axis.text = element_blank(), 
           legend.position = "right",
           legend.title = element_text(face="bold"),
-          plot.title = element_text(face = 'bold', size= "14")
+          plot.title = element_text(face = 'bold', size= 16)
         ) + 
         geom_text_repel(aes(label=signif(ac_projtype,2)), position=position_stack(vjust=0.5), direction="x") + # add labels
         guides(fill=guide_legend(title="Project Type (in Acres):")) + 
@@ -162,7 +173,7 @@ shinyApp(
      
       ggplot(data=data_acr_pie, aes(x='', y=sum_ac, fill=ac_type)) + geom_bar(stat="identity") + 
         coord_polar("y", start=0) + 
-        theme(
+        theme(text= element_text(size=14),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
           panel.border = element_blank(),
@@ -171,7 +182,7 @@ shinyApp(
           axis.text = element_blank(), 
           legend.position = "right",
           legend.title = element_text(face="bold"),
-          plot.title = element_text(face = 'bold', size= "14")
+          plot.title = element_text(face = 'bold', size= 16)
         ) + 
         geom_text_repel(aes(label=signif(sum_ac,2)), position=position_stack(vjust=0.5), direction="x") + 
         guides(fill=guide_legend(title="Land Use Category (in Acres):")) + 
